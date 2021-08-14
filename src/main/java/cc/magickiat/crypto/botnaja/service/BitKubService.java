@@ -7,11 +7,17 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
+
 import retrofit2.Retrofit;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
 import java.util.Map;
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
+
+
+import static okhttp3.logging.HttpLoggingInterceptor.Level.*;
 
 public class BitKubService {
 
@@ -40,8 +46,7 @@ public class BitKubService {
     }
 
     private OkHttpClient.Builder createHttpClientBuilder() {
-        HttpLoggingInterceptor logging = new HttpLoggingInterceptor();
-        logging.setLevel(HttpLoggingInterceptor.Level.BODY);
+        HttpLoggingInterceptor logging = HttpClient.getLoggingInterceptor();
 
         OkHttpClient.Builder client = new OkHttpClient.Builder();
         client.addInterceptor(logging);
@@ -76,5 +81,27 @@ public class BitKubService {
         Retrofit retrofit = createNormalRetrofit();
         BitKubApi api = retrofit.create(BitKubApi.class);
         return api.marketTickers(symbol).execute().body();
+    }
+}
+
+class HttpClient {
+    private static final Logger log = LogManager.getLogger(HttpClient.class);
+
+    private static final HttpLoggingInterceptor loggingInterceptor =
+            new HttpLoggingInterceptor((msg) -> {
+                log.debug(msg);
+            });
+
+    static {
+        if (log.isTraceEnabled()) {
+            loggingInterceptor.level(BODY);
+        }
+        else if (log.isDebugEnabled()) {
+            loggingInterceptor.level(BASIC);
+        }
+    }
+
+    public static HttpLoggingInterceptor getLoggingInterceptor() {
+        return loggingInterceptor;
     }
 }
