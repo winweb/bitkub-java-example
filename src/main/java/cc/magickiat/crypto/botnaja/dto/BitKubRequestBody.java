@@ -1,30 +1,15 @@
 package cc.magickiat.crypto.botnaja.dto;
 
+import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
+
+@Getter
+@Setter
+@ToString
 public class BitKubRequestBody {
+
     private long ts;
     private String sig;
 
-    public long getTs() {
-        return ts;
-    }
-
-    public void setTs(long ts) {
-        this.ts = ts;
-    }
-
-    public String getSig() {
-        return sig;
-    }
-
-    public void setSig(String sig) {
-        this.sig = sig;
-    }
-
-    @Override
-    public String toString() {
-        return "BitKubRequestBody{" +
-                "ts=" + ts +
-                ", sig='" + sig + '\'' +
-                '}';
-    }
 }
