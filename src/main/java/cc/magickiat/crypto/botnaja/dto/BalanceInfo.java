@@ -1,20 +1,17 @@
 package cc.magickiat.crypto.botnaja.dto;
 
 import lombok.Data;
-import lombok.NoArgsConstructor;
 import lombok.ToString;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
 @SuperBuilder
-@NoArgsConstructor
 @Data
-@ToString
-public class Balance {
+@ToString(callSuper = true)
+public class BalanceInfo extends Balance{
 
-    protected BigDecimal available;
-    @ToString.Exclude
-    protected BigDecimal reserved;
+    private BigDecimal price;
+    private Ticker ticker;
 
 }

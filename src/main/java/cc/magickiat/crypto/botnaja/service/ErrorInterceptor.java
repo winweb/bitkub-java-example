@@ -1,6 +1,5 @@
 package cc.magickiat.crypto.botnaja.service;
 
-import cc.magickiat.crypto.botnaja.RetrofitMain;
 import okhttp3.Interceptor;
 import okhttp3.Request;
 import okhttp3.Response;
