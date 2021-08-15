@@ -1,12 +1,13 @@
 package cc.magickiat.crypto.botnaja.dto;
 
 import lombok.Data;
-import lombok.ToString;
+import lombok.NoArgsConstructor;
 import lombok.experimental.SuperBuilder;
 
 import java.math.BigDecimal;
 
 @SuperBuilder
+@NoArgsConstructor
 @Data
 public class BalanceInfo extends Balance{
 
