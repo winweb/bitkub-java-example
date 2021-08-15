@@ -7,6 +7,7 @@ import cc.magickiat.crypto.botnaja.service.BitKubService;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 
 public class RetrofitMain {
@@ -34,22 +35,26 @@ public class RetrofitMain {
 
         Map<String, BalanceInfo> balanceInfoMap = balances.entrySet()
                 .stream()
-                .filter(b -> b.getValue().getAvailable().compareTo(BigDecimal.ZERO) != 0)
+                .filter(b -> b.getValue().getAvailable().compareTo(BigDecimal.ZERO) != 0 || b.getValue().getReserved().compareTo(BigDecimal.ZERO) != 0)
                 .collect(Collectors.toMap(
                         t -> t.getKey(),
                         e -> {
                             final BigDecimal available = e.getValue().getAvailable();
+                            final BigDecimal reserved = e.getValue().getReserved();
                             final Ticker ticker = "THB".equals(e.getKey())? null: finalTickerMap.get("THB_" + e.getKey());
 
-                            BalanceInfo balanceInfo = BalanceInfo.builder()
+                            return BalanceInfo.builder()
                                     .available(available)
-                                    .ticker(ticker)
-                                    .price(ticker == null? available: available.multiply(ticker.getLast()))
+                                    .reserved(reserved)
+                                    .ticker(ticker == null? new Ticker(): ticker)
+                                    .value(ticker == null? null: available.add(reserved).multiply(ticker.getLast()))
                                     .build();
-                            return balanceInfo;
                         }));
 
+        Map<String, BalanceInfo> sortBalanceInfoMap = new TreeMap<>(balanceInfoMap);
+
         System.out.println("\n===== My Balances Info =====");
-        balanceInfoMap.forEach((k, v) -> System.out.println(v));
+        sortBalanceInfoMap.forEach((k, v) -> System.out.printf("%-6s = %s%n", k, v));
+
     }
 }

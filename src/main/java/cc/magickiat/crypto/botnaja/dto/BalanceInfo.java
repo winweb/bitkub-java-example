@@ -8,10 +8,13 @@ import java.math.BigDecimal;
 
 @SuperBuilder
 @Data
-@ToString(callSuper = true)
 public class BalanceInfo extends Balance{
 
-    private BigDecimal price;
+    private BigDecimal value;
     private Ticker ticker;
 
+    @Override
+    public String toString() {
+        return String.format("BalanceInfo{available=%16s, reserved=%16s, value=%20s, last=%12s, percentChange=%7s}", available, reserved, value, ticker.getLast(), ticker.getPercentChange());
+    }
 }
