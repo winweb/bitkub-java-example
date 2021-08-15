@@ -92,11 +92,11 @@ public class BitKubService {
         return api.marketTickers(symbol).execute().body();
     }
 
-    public Map<String, BalanceInfo> getInfoMap() throws IOException {
-        return getInfoMap(null, null);
+    public Map<String, BalanceInfo> getBalanceInfo() throws IOException {
+        return getBalanceInfo(null, null);
     }
 
-    public Map<String, BalanceInfo> getInfoMap(Map<String, Balance> balances, Map<String, Ticker> tickerMap) throws IOException {
+    public Map<String, BalanceInfo> getBalanceInfo(Map<String, Balance> balances, Map<String, Ticker> tickerMap) throws IOException {
         if(balances == null) {
             balances = getBalances();
         }

@@ -30,7 +30,7 @@ public class RetrofitMain {
         System.out.println("===== Ticker for THB_BTC =====");
         System.out.println(tickerMap);
 
-        Map<String, BalanceInfo> sortBalanceInfoMap = service.getInfoMap(balances, finalTickerMap);
+        Map<String, BalanceInfo> sortBalanceInfoMap = service.getBalanceInfo(balances, finalTickerMap);
         System.out.println("\n===== My Balances Info =====");
         sortBalanceInfoMap.forEach((k, v) -> System.out.printf("%-6s = %s%n", k, v));
 
