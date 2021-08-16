@@ -18,11 +18,11 @@ public class RetrofitMain {
 
         Map<String, Balance> balances = service.getBalances();
         System.out.println("===== My Balances =====");
-        System.out.println(balances);
+        balances.forEach((k, v) -> System.out.printf("%-6s = %s%n", k, v));
 
         Map<String, Ticker> tickerMap = service.getTickers();
         System.out.println("===== Tickers =====");
-        System.out.println(tickerMap);
+        tickerMap.forEach((k, v) -> System.out.printf("%-6s = %s%n", k, v));
 
         Map<String, Ticker> finalTickerMap = tickerMap;
 

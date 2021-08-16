@@ -9,13 +9,15 @@ import java.math.BigDecimal;
 @SuperBuilder
 @NoArgsConstructor
 @Data
-public class BalanceInfo extends Balance{
+public class BalanceInfo{
+
+    private Balance balance;
+    private Ticker ticker;
 
     private BigDecimal value;
-    private Ticker ticker;
 
     @Override
     public String toString() {
-        return String.format("BalanceInfo{available=%16s, reserved=%16s, value=%20s, last=%12s, percentChange=%7s}", available, reserved, value, ticker.getLast(), ticker.getPercentChange());
+        return String.format("BalanceInfo{available=%16s, reserved=%16s, value=%20s, last=%12s, percentChange=%7s}", balance.available, balance.reserved, value, ticker.last, ticker.percentChange);
     }
 }

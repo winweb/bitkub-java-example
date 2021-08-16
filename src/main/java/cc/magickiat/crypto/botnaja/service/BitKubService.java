@@ -6,6 +6,7 @@ import cc.magickiat.crypto.botnaja.dto.BitKubRequestBody;
 import cc.magickiat.crypto.botnaja.dto.Ticker;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import lombok.extern.log4j.Log4j2;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 
@@ -18,28 +19,37 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.stream.Collectors;
 
-import org.apache.logging.log4j.Logger;
-import org.apache.logging.log4j.LogManager;
-
 
 import static okhttp3.logging.HttpLoggingInterceptor.Level.*;
 
+@Log4j2
 public class BitKubService {
 
-    private static final String BASE_URL = "https://api.bitkub.com";
+    protected static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
 
-    private Retrofit createNormalRetrofit() {
+    static {
+        if (log.isTraceEnabled()) {
+            loggingInterceptor.level(BODY);
+        }
+        else if (log.isDebugEnabled()) {
+            loggingInterceptor.level(BASIC);
+        }
+    }
+
+    protected static final String BASE_URL = "https://api.bitkub.com";
+
+    protected Retrofit createNormalRetrofit() {
         OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
         return createRetrofit(clientBuilder);
     }
 
-    private Retrofit createSecuredRetrofit() {
+    protected Retrofit createSecuredRetrofit() {
         OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
         clientBuilder.addInterceptor(new ApiKeySecretInterceptor());
         return createRetrofit(clientBuilder);
     }
 
-    private Retrofit createRetrofit(OkHttpClient.Builder clientBuilder) {
+    protected Retrofit createRetrofit(OkHttpClient.Builder clientBuilder) {
         ObjectMapper mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
@@ -50,11 +60,9 @@ public class BitKubService {
                 .build();
     }
 
-    private OkHttpClient.Builder createHttpClientBuilder() {
-        HttpLoggingInterceptor logging = HttpClient.getLoggingInterceptor();
-
+    protected OkHttpClient.Builder createHttpClientBuilder() {
         OkHttpClient.Builder client = new OkHttpClient.Builder();
-        client.addInterceptor(logging);
+        client.addInterceptor(loggingInterceptor);
         client.addInterceptor(new ErrorInterceptor());
         return client;
     }
@@ -113,37 +121,18 @@ public class BitKubService {
                 .collect(Collectors.toMap(
                         Map.Entry::getKey,
                         e -> {
-                            final BigDecimal available = e.getValue().getAvailable();
-                            final BigDecimal reserved = e.getValue().getReserved();
+                            Balance balance = e.getValue();
+                            final BigDecimal available = balance.getAvailable();
+                            final BigDecimal reserved = balance.getReserved();
                             final Ticker ticker = "THB".equals(e.getKey())? null: finalTickerMap.get("THB_" + e.getKey());
 
                             return BalanceInfo.builder()
-                                    .available(available)
-                                    .reserved(reserved)
+                                    .balance(balance)
                                     .ticker(ticker == null? new Ticker(): ticker)
                                     .value(ticker == null? null: available.add(reserved).multiply(ticker.getLast()))
                                     .build();
                         }));
 
         return new TreeMap<>(balanceInfoMap);
-    }
-}
-
-class HttpClient {
-    private static final Logger log = LogManager.getLogger(HttpClient.class);
-
-    private static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
-
-    static {
-        if (log.isTraceEnabled()) {
-            loggingInterceptor.level(BODY);
-        }
-        else if (log.isDebugEnabled()) {
-            loggingInterceptor.level(BASIC);
-        }
-    }
-
-    public static HttpLoggingInterceptor getLoggingInterceptor() {
-        return loggingInterceptor;
     }
 }

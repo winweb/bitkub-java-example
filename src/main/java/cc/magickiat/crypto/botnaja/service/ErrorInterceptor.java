@@ -6,7 +6,7 @@ import okhttp3.Response;
 
 import java.io.IOException;
 
-class ErrorInterceptor implements Interceptor {
+public class ErrorInterceptor implements Interceptor {
     @Override
     public Response intercept(Chain chain) throws IOException {
         Request request = chain.request();
