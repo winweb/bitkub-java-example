@@ -17,6 +17,7 @@ import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
@@ -61,10 +62,13 @@ public class BitKubService {
     }
 
     protected OkHttpClient.Builder createHttpClientBuilder() {
-        OkHttpClient.Builder client = new OkHttpClient.Builder();
-        client.addInterceptor(loggingInterceptor);
-        client.addInterceptor(new ErrorInterceptor());
-        return client;
+        return new OkHttpClient.Builder()
+                .addInterceptor(loggingInterceptor)
+                .addInterceptor(new ErrorInterceptor())
+                .connectTimeout(10, TimeUnit.SECONDS)
+                .readTimeout(10, TimeUnit.SECONDS)
+                .writeTimeout(30, TimeUnit.SECONDS)
+                .retryOnConnectionFailure(true);
     }
 
     public Long getServerTime() throws IOException {
@@ -124,12 +128,12 @@ public class BitKubService {
                             Balance balance = e.getValue();
                             final BigDecimal available = balance.getAvailable();
                             final BigDecimal reserved = balance.getReserved();
-                            final Ticker ticker = "THB".equals(e.getKey())? null: finalTickerMap.get("THB_" + e.getKey());
+                            final Ticker ticker = !finalTickerMap.containsKey("THB_" + e.getKey())? new Ticker(): finalTickerMap.get("THB_" + e.getKey());
 
                             return BalanceInfo.builder()
                                     .balance(balance)
-                                    .ticker(ticker == null? new Ticker(): ticker)
-                                    .value(ticker == null? null: available.add(reserved).multiply(ticker.getLast()))
+                                    .ticker(ticker)
+                                    .value(ticker.getLast() == null? null: available.add(reserved).multiply(ticker.getLast()))
                                     .build();
                         }));
 
