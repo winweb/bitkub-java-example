@@ -65,8 +65,8 @@ public class BitKubService {
         return new OkHttpClient.Builder()
                 .addInterceptor(loggingInterceptor)
                 .addInterceptor(new ErrorInterceptor())
-                .connectTimeout(10, TimeUnit.SECONDS)
-                .readTimeout(10, TimeUnit.SECONDS)
+                .connectTimeout(20, TimeUnit.SECONDS)
+                .readTimeout(20, TimeUnit.SECONDS)
                 .writeTimeout(30, TimeUnit.SECONDS)
                 .retryOnConnectionFailure(true);
     }
