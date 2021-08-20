@@ -16,7 +16,7 @@ public class RetrofitMain {
         System.out.println("===== Server Time =====");
         System.out.println(serverTime);
 
-        Map<String, Balance> balances = service.getBalances();
+        Map<String, Balance> balances = service.getBalances(serverTime);
         System.out.println("===== My Balances =====");
         balances.forEach((k, v) -> System.out.printf("%-6s = %s%n", k, v));
 

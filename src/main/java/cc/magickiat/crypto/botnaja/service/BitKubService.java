@@ -3,6 +3,7 @@ package cc.magickiat.crypto.botnaja.service;
 import cc.magickiat.crypto.botnaja.dto.Balance;
 import cc.magickiat.crypto.botnaja.dto.BalanceInfo;
 import cc.magickiat.crypto.botnaja.dto.BitKubRequestBody;
+import cc.magickiat.crypto.botnaja.dto.BitKubResponseBody;
 import cc.magickiat.crypto.botnaja.dto.Ticker;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -26,7 +27,10 @@ import static okhttp3.logging.HttpLoggingInterceptor.Level.*;
 @Log4j2
 public class BitKubService {
 
-    protected static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
+    public static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
+    public static final ObjectMapper mapper = new ObjectMapper();
+    public static final ApiKeySecretInterceptor apiKeySecretInterceptor = new ApiKeySecretInterceptor();
+    public static final String BASE_URL = "https://api.bitkub.com";
 
     static {
         if (log.isTraceEnabled()) {
@@ -35,9 +39,9 @@ public class BitKubService {
         else if (log.isDebugEnabled()) {
             loggingInterceptor.level(BASIC);
         }
-    }
 
-    protected static final String BASE_URL = "https://api.bitkub.com";
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    }
 
     protected Retrofit createNormalRetrofit() {
         OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
@@ -46,19 +50,8 @@ public class BitKubService {
 
     protected Retrofit createSecuredRetrofit() {
         OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
-        clientBuilder.addInterceptor(new ApiKeySecretInterceptor());
+        clientBuilder.addInterceptor(apiKeySecretInterceptor);
         return createRetrofit(clientBuilder);
-    }
-
-    protected Retrofit createRetrofit(OkHttpClient.Builder clientBuilder) {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
-
-        return new Retrofit.Builder()
-                .baseUrl(BASE_URL)
-                .addConverterFactory(JacksonConverterFactory.create(mapper))
-                .client(clientBuilder.build())
-                .build();
     }
 
     protected OkHttpClient.Builder createHttpClientBuilder() {
@@ -71,6 +64,14 @@ public class BitKubService {
                 .retryOnConnectionFailure(true);
     }
 
+    protected Retrofit createRetrofit(OkHttpClient.Builder clientBuilder) {
+        return new Retrofit.Builder()
+                .baseUrl(BASE_URL)
+                .addConverterFactory(JacksonConverterFactory.create(mapper))
+                .client(clientBuilder.build())
+                .build();
+    }
+
     public Long getServerTime() throws IOException {
         Retrofit retrofit = createNormalRetrofit();
         BitKubApi api = retrofit.create(BitKubApi.class);
@@ -78,17 +79,19 @@ public class BitKubService {
     }
 
     public Map<String, Balance> getBalances() throws IOException {
-        Retrofit securedRetrofit = createSecuredRetrofit();
-        BitKubApi api = securedRetrofit.create(BitKubApi.class);
+        return  getBalances(getServerTime());
+    }
 
-        Long ts = getServerTime();
+    public Map<String, Balance> getBalances(long ts) throws IOException {
+        Retrofit securedRetrofit = this.createSecuredRetrofit();
+        BitKubApi api = securedRetrofit.create(BitKubApi.class);
         BitKubRequestBody requestBody = new BitKubRequestBody();
         requestBody.setTs(ts);
         requestBody.setSig(HmacService.calculateHmac("{\"ts\":" + ts + "}"));
-
-        var result = api.getBalances(requestBody).execute().body();
+        BitKubResponseBody<Map<String, Balance>> result = api.getBalances(requestBody).execute().body();
 
         assert result != null;
+
         return result.getResult();
     }
 
@@ -105,37 +108,36 @@ public class BitKubService {
     }
 
     public Map<String, BalanceInfo> getBalanceInfo() throws IOException {
-        return getBalanceInfo(null, null);
+        return getBalanceInfo(getBalances(), null);
     }
 
-    public Map<String, BalanceInfo> getBalanceInfo(Map<String, Balance> balances, Map<String, Ticker> tickerMap) throws IOException {
-        if(balances == null) {
-            balances = getBalances();
-        }
+    public Map<String, BalanceInfo> getBalanceInfo(Long ts) throws IOException {
+        return getBalanceInfo(getBalances(ts), getTickers());
+    }
 
-        if(tickerMap == null) {
-            tickerMap = getTickers();
-        }
-
-        Map<String, Ticker> finalTickerMap = tickerMap;
+    public Map<String, BalanceInfo> getBalanceInfo(Map<String, Balance> balances, final Map<String, Ticker> tickerMap) {
 
         Map<String, BalanceInfo> balanceInfoMap = balances.entrySet()
-                .stream()
-                .filter(b -> b.getValue().getAvailable().compareTo(BigDecimal.ZERO) != 0 || b.getValue().getReserved().compareTo(BigDecimal.ZERO) != 0)
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        e -> {
-                            Balance balance = e.getValue();
-                            final BigDecimal available = balance.getAvailable();
-                            final BigDecimal reserved = balance.getReserved();
-                            final Ticker ticker = !finalTickerMap.containsKey("THB_" + e.getKey())? new Ticker(): finalTickerMap.get("THB_" + e.getKey());
+            .stream()
+            .filter(b -> {
+                Balance balance = b.getValue();
+                return balance.getAvailable().compareTo(BigDecimal.ZERO) != 0 || balance.getReserved().compareTo(BigDecimal.ZERO) != 0;
+            })
+            .collect(Collectors.toMap(
+                Map.Entry::getKey,
+                e -> {
+                    Balance balance = e.getValue();
+                    final BigDecimal available = balance.getAvailable();
+                    final BigDecimal reserved = balance.getReserved();
+                    final String symbol = "THB_" + e.getKey();
+                    final Ticker ticker = !tickerMap.containsKey(symbol)? new Ticker(): tickerMap.get(symbol);
 
-                            return BalanceInfo.builder()
-                                    .balance(balance)
-                                    .ticker(ticker)
-                                    .value(ticker.getLast() == null? null: available.add(reserved).multiply(ticker.getLast()))
-                                    .build();
-                        }));
+                    return BalanceInfo.builder()
+                            .balance(balance)
+                            .ticker(ticker)
+                            .value(ticker.getLast() == null? null: available.add(reserved).multiply(ticker.getLast()))
+                            .build();
+                }));
 
         return new TreeMap<>(balanceInfoMap);
     }
