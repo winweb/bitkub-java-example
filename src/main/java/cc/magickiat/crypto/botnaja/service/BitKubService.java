@@ -108,7 +108,7 @@ public class BitKubService {
     }
 
     public Map<String, BalanceInfo> getBalanceInfo() throws IOException {
-        return getBalanceInfo(getBalances(), null);
+        return getBalanceInfo(getBalances(), getTickers());
     }
 
     public Map<String, BalanceInfo> getBalanceInfo(Long ts) throws IOException {
