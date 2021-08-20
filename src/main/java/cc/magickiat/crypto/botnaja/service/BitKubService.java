@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 
-import static okhttp3.logging.HttpLoggingInterceptor.Level.*;
+import static okhttp3.logging.HttpLoggingInterceptor.*;
 
 @Log4j2
 public class BitKubService {
@@ -34,10 +34,10 @@ public class BitKubService {
 
     static {
         if (log.isTraceEnabled()) {
-            loggingInterceptor.level(BODY);
+            loggingInterceptor.setLevel(Level.BODY);
         }
         else if (log.isDebugEnabled()) {
-            loggingInterceptor.level(BASIC);
+            loggingInterceptor.setLevel(Level.BASIC);
         }
 
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
