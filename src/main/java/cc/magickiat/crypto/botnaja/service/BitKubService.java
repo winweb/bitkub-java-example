@@ -7,7 +7,7 @@ import cc.magickiat.crypto.botnaja.dto.BitKubResponseBody;
 import cc.magickiat.crypto.botnaja.dto.Ticker;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.log4j.Log4j2;
+import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 
@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 import static okhttp3.logging.HttpLoggingInterceptor.*;
 
-@Log4j2
+@Slf4j
 public class BitKubService {
 
     public static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
