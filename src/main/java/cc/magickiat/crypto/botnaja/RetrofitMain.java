@@ -10,7 +10,7 @@ import java.util.Map;
 public class RetrofitMain {
 
     public static void main(String[] args) throws Exception {
-        BitKubService service = new BitKubService();
+        BitKubService service = BitKubService.getInstance();
 
         Long serverTime = service.getServerTime();
         System.out.println("===== Server Time =====");

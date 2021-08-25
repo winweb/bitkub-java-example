@@ -8,6 +8,7 @@ import cc.magickiat.crypto.botnaja.dto.Ticker;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 
@@ -27,12 +28,26 @@ import static okhttp3.logging.HttpLoggingInterceptor.*;
 @Slf4j
 public class BitKubService {
 
+    private static BitKubService bitKubServiceInstance;
     public static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
-    public static final ObjectMapper mapper = new ObjectMapper();
-    public static final ApiKeySecretInterceptor apiKeySecretInterceptor = new ApiKeySecretInterceptor();
-    public static final String BASE_URL = "https://api.bitkub.com";
+    public static final OkHttpClient clientBuilder = new OkHttpClient.Builder()
+                                                        .connectionPool(new ConnectionPool(5, 60, TimeUnit.SECONDS))
+                                                        .addInterceptor(loggingInterceptor)
+                                                        .addInterceptor(new ErrorInterceptor())
+                                                        .connectTimeout(20, TimeUnit.SECONDS)
+                                                        .readTimeout(20, TimeUnit.SECONDS)
+                                                        .writeTimeout(30, TimeUnit.SECONDS)
+                                                        .retryOnConnectionFailure(true)
+                                                        .build();
 
-    static {
+    public static final ObjectMapper mapper = new ObjectMapper();
+    public static Retrofit normalRetrofit;
+    public static Retrofit secureRetrofit;
+    public static BitKubApi normalBitkubApi;
+    public static BitKubApi secureBitkubApi;
+
+    public BitKubService() {
+
         if (log.isTraceEnabled()) {
             loggingInterceptor.setLevel(Level.BODY);
         }
@@ -41,54 +56,45 @@ public class BitKubService {
         }
 
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+
+        normalRetrofit = createRetrofit(clientBuilder);
+
+        OkHttpClient.Builder newClientBuilder = clientBuilder.newBuilder();
+        newClientBuilder.addInterceptor(new ApiKeySecretInterceptor());
+        secureRetrofit = createRetrofit(newClientBuilder.build());
+
+        normalBitkubApi = normalRetrofit.create(BitKubApi.class);
+        secureBitkubApi = secureRetrofit.create(BitKubApi.class);
     }
 
-    protected Retrofit createNormalRetrofit() {
-        OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
-        return createRetrofit(clientBuilder);
+    public static BitKubService getInstance() {
+        if (bitKubServiceInstance == null) {
+            bitKubServiceInstance = new BitKubService();
+        }
+        return bitKubServiceInstance;
     }
 
-    protected Retrofit createSecuredRetrofit() {
-        OkHttpClient.Builder clientBuilder = createHttpClientBuilder();
-        clientBuilder.addInterceptor(apiKeySecretInterceptor);
-        return createRetrofit(clientBuilder);
-    }
-
-    protected OkHttpClient.Builder createHttpClientBuilder() {
-        return new OkHttpClient.Builder()
-                .addInterceptor(loggingInterceptor)
-                .addInterceptor(new ErrorInterceptor())
-                .connectTimeout(20, TimeUnit.SECONDS)
-                .readTimeout(20, TimeUnit.SECONDS)
-                .writeTimeout(30, TimeUnit.SECONDS)
-                .retryOnConnectionFailure(true);
-    }
-
-    protected Retrofit createRetrofit(OkHttpClient.Builder clientBuilder) {
+    public Retrofit createRetrofit(OkHttpClient clientBuilder) {
         return new Retrofit.Builder()
-                .baseUrl(BASE_URL)
+                .baseUrl("https://api.bitkub.com")
                 .addConverterFactory(JacksonConverterFactory.create(mapper))
-                .client(clientBuilder.build())
+                .client(clientBuilder)
                 .build();
     }
 
     public Long getServerTime() throws IOException {
-        Retrofit retrofit = createNormalRetrofit();
-        BitKubApi api = retrofit.create(BitKubApi.class);
-        return api.serverTime().execute().body();
+        return normalBitkubApi.serverTime().execute().body();
     }
 
     public Map<String, Balance> getBalances() throws IOException {
-        return  getBalances(getServerTime());
+        return getBalances(getServerTime());
     }
 
     public Map<String, Balance> getBalances(long ts) throws IOException {
-        Retrofit securedRetrofit = this.createSecuredRetrofit();
-        BitKubApi api = securedRetrofit.create(BitKubApi.class);
         BitKubRequestBody requestBody = new BitKubRequestBody();
         requestBody.setTs(ts);
         requestBody.setSig(HmacService.calculateHmac("{\"ts\":" + ts + "}"));
-        BitKubResponseBody<Map<String, Balance>> result = api.getBalances(requestBody).execute().body();
+        BitKubResponseBody<Map<String, Balance>> result = secureBitkubApi.getBalances(requestBody).execute().body();
 
         assert result != null;
 
@@ -96,15 +102,11 @@ public class BitKubService {
     }
 
     public Map<String, Ticker> getTickers() throws IOException {
-        Retrofit retrofit = createNormalRetrofit();
-        BitKubApi api = retrofit.create(BitKubApi.class);
-        return api.marketTickers(null).execute().body();
+        return normalBitkubApi.marketTickers(null).execute().body();
     }
 
     public Map<String, Ticker> getTicker(String symbol) throws IOException {
-        Retrofit retrofit = createNormalRetrofit();
-        BitKubApi api = retrofit.create(BitKubApi.class);
-        return api.marketTickers(symbol).execute().body();
+        return normalBitkubApi.marketTickers(symbol).execute().body();
     }
 
     public Map<String, BalanceInfo> getBalanceInfo() throws IOException {
@@ -135,7 +137,7 @@ public class BitKubService {
                     return BalanceInfo.builder()
                             .balance(balance)
                             .ticker(ticker)
-                            .value(ticker.getLast() == null? null: available.add(reserved).multiply(ticker.getLast()))
+                            .value(ticker.getLast() == null? BigDecimal.ZERO: available.add(reserved).multiply(ticker.getLast()))
                             .build();
                 }));
 
