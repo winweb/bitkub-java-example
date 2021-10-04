@@ -30,9 +30,11 @@ public class RetrofitMain {
         System.out.println("===== Ticker for THB_BTC =====");
         System.out.println(tickerMap);
 
+        long time = System.currentTimeMillis();
+
         Map<String, BalanceInfo> sortBalanceInfoMap = service.getBalanceInfo(balances, finalTickerMap);
         System.out.println("\n===== My Balances Info =====");
         sortBalanceInfoMap.forEach((k, v) -> System.out.printf("%-6s = %s%n", k, v));
-
+        System.out.println("take time: " + (System.currentTimeMillis() - time) + "ms");
     }
 }

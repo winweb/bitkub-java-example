@@ -8,6 +8,7 @@ import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
+import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.IOException;
@@ -25,7 +26,7 @@ public class BitKubService {
     private static BitKubService bitKubServiceInstance;
     public static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
     public static final OkHttpClient clientBuilder = new OkHttpClient.Builder()
-                                                        .connectionPool(new ConnectionPool(40, 40, TimeUnit.SECONDS))
+                                                        .connectionPool(new ConnectionPool(50, 50, TimeUnit.SECONDS))
                                                         .addInterceptor(loggingInterceptor)
                                                         .addInterceptor(new ErrorInterceptor())
                                                         .connectTimeout(10, TimeUnit.SECONDS)
@@ -75,6 +76,7 @@ public class BitKubService {
     public static Retrofit createRetrofit(OkHttpClient clientBuilder) {
         return new Retrofit.Builder()
                             .baseUrl("https://api.bitkub.com")
+                            .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                             .addConverterFactory(JacksonConverterFactory.create(mapper))
                             .client(clientBuilder)
                             .build();
