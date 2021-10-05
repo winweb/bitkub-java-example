@@ -4,6 +4,7 @@ import cc.magickiat.crypto.botnaja.dto.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
+import okhttp3.Cache;
 import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
@@ -11,6 +12,7 @@ import retrofit2.Retrofit;
 import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.util.Map;
@@ -24,11 +26,15 @@ import static okhttp3.logging.HttpLoggingInterceptor.Level;
 public class BitKubService {
 
     private static BitKubService bitKubServiceInstance;
-    public static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
+    private static final Cache cache = new Cache(new File("ok-http-client-cache"), 10 * 1024 * 1024);
+    private static final ConnectionPool connectionPool =  new ConnectionPool(50, 50, TimeUnit.SECONDS);
+    private static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
+    private static final ErrorInterceptor errorInterceptor = new ErrorInterceptor();
     public static final OkHttpClient clientBuilder = new OkHttpClient.Builder()
-                                                        .connectionPool(new ConnectionPool(50, 50, TimeUnit.SECONDS))
+                                                        .cache(cache)
+                                                        .connectionPool(connectionPool)
                                                         .addInterceptor(loggingInterceptor)
-                                                        .addInterceptor(new ErrorInterceptor())
+                                                        .addInterceptor(errorInterceptor)
                                                         .connectTimeout(10, TimeUnit.SECONDS)
                                                         .readTimeout(20, TimeUnit.SECONDS)
                                                         .writeTimeout(20, TimeUnit.SECONDS)
