@@ -30,18 +30,11 @@ public class BitKubService {
     private static final ConnectionPool connectionPool =  new ConnectionPool(50, 50, TimeUnit.SECONDS);
     private static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
     private static final ErrorInterceptor errorInterceptor = new ErrorInterceptor();
-    public static final OkHttpClient clientBuilder = new OkHttpClient.Builder()
-                                                        .cache(cache)
-                                                        .connectionPool(connectionPool)
-                                                        .addInterceptor(loggingInterceptor)
-                                                        .addInterceptor(errorInterceptor)
-                                                        .connectTimeout(10, TimeUnit.SECONDS)
-                                                        .readTimeout(20, TimeUnit.SECONDS)
-                                                        .writeTimeout(20, TimeUnit.SECONDS)
-                                                        .retryOnConnectionFailure(true)
-                                                        .build();
 
-    public static final ObjectMapper mapper = new ObjectMapper();
+    public static final OkHttpClient clientBuilder;
+    public static final OkHttpClient secureClientBuilder;
+
+    public static final ObjectMapper mapper;
 
     public static Retrofit normalRetrofit;
     public static Retrofit secureRetrofit;
@@ -49,14 +42,35 @@ public class BitKubService {
     public static BitKubApi secureBitkubApi;
 
     static {
+
+        clientBuilder = new OkHttpClient.Builder()
+                            .cache(cache)
+                            .connectionPool(connectionPool)
+                            .addInterceptor(loggingInterceptor)
+                            .addInterceptor(errorInterceptor)
+                            .connectTimeout(10, TimeUnit.SECONDS)
+                            .readTimeout(20, TimeUnit.SECONDS)
+                            .writeTimeout(20, TimeUnit.SECONDS)
+                            .retryOnConnectionFailure(true)
+                            .build();
+
+        secureClientBuilder = new OkHttpClient.Builder()
+                                .cache(cache)
+                                .connectionPool(connectionPool)
+                                .addInterceptor(new ApiKeySecretInterceptor())
+                                .addInterceptor(loggingInterceptor)
+                                .addInterceptor(errorInterceptor)
+                                .connectTimeout(10, TimeUnit.SECONDS)
+                                .readTimeout(20, TimeUnit.SECONDS)
+                                .writeTimeout(20, TimeUnit.SECONDS)
+                                .retryOnConnectionFailure(true)
+                                .build();
+
+        mapper = new ObjectMapper();
         mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 
         normalRetrofit = createRetrofit(clientBuilder);
-
-        OkHttpClient.Builder secureClientBuilder = clientBuilder.newBuilder();
-
-        secureClientBuilder.addInterceptor(new ApiKeySecretInterceptor());
-        secureRetrofit = createRetrofit(secureClientBuilder.build());
+        secureRetrofit = createRetrofit(secureClientBuilder);
 
         normalBitkubApi = normalRetrofit.create(BitKubApi.class);
         secureBitkubApi = secureRetrofit.create(BitKubApi.class);
