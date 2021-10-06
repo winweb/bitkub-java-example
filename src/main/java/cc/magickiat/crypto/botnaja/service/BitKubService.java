@@ -27,7 +27,7 @@ public class BitKubService {
 
     private static BitKubService bitKubServiceInstance;
     private static final Cache cache = new Cache(new File("ok-http-client-cache"), 10 * 1024 * 1024);
-    private static final ConnectionPool connectionPool =  new ConnectionPool(50, 50, TimeUnit.SECONDS);
+    private static final ConnectionPool connectionPool =  new ConnectionPool(60, 50, TimeUnit.SECONDS);
     private static final HttpLoggingInterceptor loggingInterceptor = new HttpLoggingInterceptor(log::debug);
     private static final ErrorInterceptor errorInterceptor = new ErrorInterceptor();
 
@@ -55,7 +55,6 @@ public class BitKubService {
                             .build();
 
         secureClientBuilder = new OkHttpClient.Builder()
-                                .cache(cache)
                                 .connectionPool(connectionPool)
                                 .addInterceptor(new ApiKeySecretInterceptor())
                                 .addInterceptor(loggingInterceptor)
@@ -93,12 +92,12 @@ public class BitKubService {
         return bitKubServiceInstance;
     }
 
-    public static Retrofit createRetrofit(OkHttpClient clientBuilder) {
+    public static Retrofit createRetrofit(OkHttpClient client) {
         return new Retrofit.Builder()
                             .baseUrl("https://api.bitkub.com")
                             .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
                             .addConverterFactory(JacksonConverterFactory.create(mapper))
-                            .client(clientBuilder)
+                            .client(client)
                             .build();
     }
 
