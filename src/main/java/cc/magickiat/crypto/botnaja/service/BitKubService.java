@@ -44,7 +44,6 @@ public class BitKubService {
     static {
 
         clientBuilder = new OkHttpClient.Builder()
-                            .cache(cache)
                             .connectionPool(connectionPool)
                             .addInterceptor(loggingInterceptor)
                             .addInterceptor(errorInterceptor)
@@ -54,15 +53,8 @@ public class BitKubService {
                             .retryOnConnectionFailure(true)
                             .build();
 
-        secureClientBuilder = new OkHttpClient.Builder()
-                                .connectionPool(connectionPool)
+        secureClientBuilder = clientBuilder.newBuilder()
                                 .addInterceptor(new ApiKeySecretInterceptor())
-                                .addInterceptor(loggingInterceptor)
-                                .addInterceptor(errorInterceptor)
-                                .connectTimeout(10, TimeUnit.SECONDS)
-                                .readTimeout(20, TimeUnit.SECONDS)
-                                .writeTimeout(20, TimeUnit.SECONDS)
-                                .retryOnConnectionFailure(true)
                                 .build();
 
         mapper = new ObjectMapper();
