@@ -9,7 +9,8 @@ import okhttp3.ConnectionPool;
 import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.File;
@@ -87,7 +88,7 @@ public class BitKubService {
     public static Retrofit createRetrofit(OkHttpClient client) {
         return new Retrofit.Builder()
                             .baseUrl("https://api.bitkub.com")
-                            .addCallAdapterFactory(RxJavaCallAdapterFactory.create())
+                            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
                             .addConverterFactory(JacksonConverterFactory.create(mapper))
                             .client(client)
                             .build();
