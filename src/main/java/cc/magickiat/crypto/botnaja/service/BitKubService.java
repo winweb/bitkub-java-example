@@ -10,7 +10,7 @@ import okhttp3.OkHttpClient;
 import okhttp3.logging.HttpLoggingInterceptor;
 import retrofit2.Retrofit;
 
-import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
+import retrofit2.adapter.rxjava3.RxJava3CallAdapterFactory;
 import retrofit2.converter.jackson.JacksonConverterFactory;
 
 import java.io.File;
@@ -88,7 +88,7 @@ public class BitKubService {
     public static Retrofit createRetrofit(OkHttpClient client) {
         return new Retrofit.Builder()
                             .baseUrl("https://api.bitkub.com")
-                            .addCallAdapterFactory(RxJava2CallAdapterFactory.create())
+                            .addCallAdapterFactory(RxJava3CallAdapterFactory.create())
                             .addConverterFactory(JacksonConverterFactory.create(mapper))
                             .client(client)
                             .build();
@@ -110,8 +110,8 @@ public class BitKubService {
         requestBody.setSig(HmacService.calculateHmac("{\"ts\":" + ts + "}"));
 
         BitKubResponseBody<Map<String, Balance>> result = secureBitkubApi.getBalances(requestBody)
-                                                                            .execute()
-                                                                            .body();
+                .execute()
+                .body();
 
         assert result != null;
 
