@@ -23,7 +23,9 @@ public class Ticker {
     protected BigDecimal highestBid;
     protected BigDecimal change;
     protected BigDecimal percentChange;
+    @JsonIgnore
     protected BigDecimal baseVolume;
+    @JsonIgnore
     protected BigDecimal quoteVolume;
     @JsonIgnore
     protected int isFrozen;
