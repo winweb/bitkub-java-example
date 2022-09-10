@@ -3,6 +3,7 @@ package cc.magickiat.crypto.botnaja.service;
 import cc.magickiat.crypto.botnaja.dto.*;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import kotlin.concurrent.TimersKt;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.Cache;
 import okhttp3.ConnectionPool;
@@ -160,7 +161,7 @@ public class BitKubService {
                     final BigDecimal available = balance.getAvailable();
                     final BigDecimal reserved = balance.getReserved();
                     final String symbol = "THB_" + e.getKey();
-                    final Ticker ticker = !tickerMap.containsKey(symbol)? new Ticker(): tickerMap.get(symbol);
+                    final Ticker ticker = !tickerMap.containsKey(symbol)? Ticker.builder().build() : tickerMap.get(symbol);
 
                     return BalanceInfo.builder()
                             .balance(balance)
